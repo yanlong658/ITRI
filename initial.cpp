@@ -9,8 +9,7 @@
 // features2d ORB,AKAZE
 #include <opencv2/features2d.hpp>
 // xfeatures2d SIFT,SURF
-//#include <opencv2/sfm/triangulation.hpp>
-#include <opencv2/xfeatures2d.hpp>
+//#include <opencv2/xfeatures2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/Image.h>
 #include <cv_bridge/cv_bridge.h>
@@ -20,20 +19,16 @@ typedef std::pair<sensor_msgs::ImageConstPtr ,sensor_msgs::ImageConstPtr> Combin
 std::queue<sensor_msgs::ImageConstPtr> camera1Buf;
 std::queue<sensor_msgs::ImageConstPtr> camera2Buf;
 std::queue<CombinedData> measurements;
-cv::Point2d principal_point ( 325.1, 249.7 );
-double focal_length = 521;
 
-// 416.811266, 0, 316.940768, 0, 417.101651, 251.243429,  0, 0, 1
-// 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1
-// k_l ,k_r 內參
+
 cv::Mat k_g = (cv::Mat_<double>(3,3) << 829.7418430781596, 0, 328.7201641340541, 0, 830.4519219378317, 238.1345206129469, 0, 0, 1);
 cv::Mat k_b = (cv::Mat_<double>(3,3) << 866.3564402390112, 0, 326.529608545326, 0, 862.6555640703662, 263.4258095061218, 0, 0, 1);
 
+std::string path1 , path2, path_topic1, path_topic2;
+std::mutex m_buf, com_buf;
+
 //test
 cv::Mat imageL,imageR;
-
-int frame_count =0;
-std::mutex m_buf, com_buf;
 
 // test center position of reflected ball
 cv::Point2f cameraData1(195.0,305.0);
@@ -143,10 +138,10 @@ void pose_estimation_2d2d(std::vector<cv::KeyPoint> &keypoint_1 , std::vector<cv
 void find_feature_matches(cv::Mat &image1 ,cv::Mat &image2,std::vector<cv::KeyPoint> &keypoints_1 ,std::vector<cv::KeyPoint> &keypoints_2,std::vector<cv::DMatch> &good_matches)
 {
   //SURF feature
-  cv::Ptr<cv::xfeatures2d::SIFT> surf = cv::xfeatures2d::SIFT::create();
   cv::Mat descriptor_1 ,descriptor_2;
 
 /*
+  cv::Ptr<cv::xfeatures2d::SIFT> surf = cv::xfeatures2d::SIFT::create();
   surf->detect(image1, keypoints_1);
   surf->detect(image2, keypoints_2);
 
@@ -218,13 +213,12 @@ cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr img_msg , cv_bridge::Cv
 
 void process()
 {
-/*
+
   cv_bridge::CvImageConstPtr ptr1,ptr2;
   cv::Mat image1 , image2;
-
+/*
   image1 = getImageFromMsg(measurements.back().first, ptr1);
   image2 = getImageFromMsg(measurements.back().second, ptr2);
-
 */
   std::vector<cv::KeyPoint> keypoints_1, keypoints_2;
   std::vector<cv::DMatch> matches;
@@ -292,6 +286,7 @@ void process()
   std::cout<<"R= "<<R_<<std::endl;
   std::cout<<"t= "<<t_<<std::endl;
 */
+
   cv::Mat img_RR_matches;
   // drawe the matched photo
   cv::drawMatches(imageL,keypoints_1,imageR,keypoints_2,matches,img_RR_matches, cv::Scalar(0, 255, 0));
@@ -310,7 +305,6 @@ void command()
     char c = getchar();
     if(c == 's')
     {
-      frame_count++;
       com_buf.lock();
       measurements.push(getMeasurement());
       com_buf.unlock();
@@ -319,21 +313,44 @@ void command()
   }
 }
 
+bool readParameter(ros::NodeHandle &nh)
+{
+    if(!nh.getParam("path1",path1) || !nh.getParam("path2",path2))
+    {
+        ROS_ERROR_STREAM("Failed to get param 'image_path'");
+        return false;
+    }
+
+    if(!nh.getParam("path_topic1",path_topic1) || !nh.getParam("path_topic2",path_topic2))
+    {
+        ROS_ERROR_STREAM("Failed to get param 'path_topic'");
+        return false;
+    }
+}
+
 int main(int argc, char** argv)
 {
 
   ros::init(argc, argv, "initial");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh;
   ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+  bool init = readParameter(nh);
 
-  imageL = cv::imread("/home/yanlong658/ITRI_ws/image/1.jpg",CV_LOAD_IMAGE_GRAYSCALE);
-  imageR = cv::imread("/home/yanlong658/ITRI_ws/image/2.jpg",CV_LOAD_IMAGE_GRAYSCALE);
+  if(init)
+  {
+     std::cout<<"path1 : "<<path1<<std::endl;
+     std::cout<<"path2 : "<<path2<<std::endl;
+     std::cout<<"path_topic1 : "<<path_topic1<<std::endl;
+     std::cout<<"path_topic2 : "<<path_topic2<<std::endl;
+  }else
+      ros::shutdown();
+
+  imageL = cv::imread(path1,1);
+  imageR = cv::imread(path2,1);
 
   // put your image
-  ros::Subscriber image1_sub = nh.subscribe<sensor_msgs::Image>("/camera1", 100, camera1);
-  ros::Subscriber image2_sub = nh.subscribe<sensor_msgs::Image>("/camera2", 100, camera2);
-  //cameraData1er.push_back(cameraData1);
-  //cameraData2er.push_back(cameraData2);
+  ros::Subscriber image1_sub = nh.subscribe<sensor_msgs::Image>(path_topic1, 100, camera1);
+  ros::Subscriber image2_sub = nh.subscribe<sensor_msgs::Image>(path_topic2, 100, camera2);
 
   std::thread measurement{command};
   ros::spin();
