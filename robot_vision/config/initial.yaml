@@ -1,0 +1,23 @@
+%YAML:1.0
+
+# change your topic path
+image1_topic: "/arducam/camera/image_raw" 
+image1_topic: "/arducam/camera/image_raw"
+
+imageL_path: "/home/yanlong658/ITRI_ws/image/lab1.jpg"
+imageR_path: "/home/yanlong658/ITRI_ws/image/lab2.jpg"
+
+R_12: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1,  0,  0, 
+           0,  1,  0, 
+           0,  0,  1]
+
+t_12: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [0.0,0.0,0.0]
+
