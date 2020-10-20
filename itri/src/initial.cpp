@@ -48,15 +48,6 @@ CombinedData getMeasurement()
   return measurement;
 }
 
-//pixel frame translate to camera frame
-cv::Point2d pixel2cam(const cv::Point2d &p, const cv::Mat &K)
-{
-  return cv::Point2d
-    (
-      (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
-      (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1)
-    );
-}
 
 void process()
 {
@@ -81,7 +72,7 @@ void process()
   std::cout<<"pose_estimation_2d2d t : "<<t<<std::endl;
 
   //traingulation
-  std::vector<cv::Point3d> points;
+  std::vector<cv::Point3f> points;
   imageprocess.triangulation(keypoints_1, keypoints_2, matches, R, t, points);
 
 /*
@@ -108,7 +99,8 @@ void process()
   std::vector<cv::Point3f> pts_3d;
   std::vector<cv::Point2f> pts_2d;
 
-  imageprocess.Pnp(matches, points, pts_2d, keypoints_1, keypoints_2, R, t ,imageL);
+  // pnp的值不準,可能需要等到多個camera之後改用ba來限制
+  //imageprocess.Pnp(matches, points, pts_2d, keypoints_1, keypoints_2, R, t ,imageL);
 
   std::cout<<"pnp R : "<<R<<std::endl;
   std::cout<<"pnp t : "<<t<<std::endl;
@@ -116,6 +108,10 @@ void process()
   points.clear();
   std::cout<<"points.size : "<<points.size()<<std::endl;
   imageprocess.triangulation(keypoints_1, keypoints_2, matches, R, t, points);
+
+  // set the tansformation
+  r_12 = R;
+  t_12 = t;
 
   cv::Mat img_RR_matches;
   // drawe the matched photo

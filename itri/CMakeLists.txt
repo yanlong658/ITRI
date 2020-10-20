@@ -44,3 +44,6 @@ src/initial.cpp
 src/process.cpp
 src/parameter.cpp)
 target_link_libraries(initial ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+add_executable(try src/try.cpp)
+target_link_libraries(try ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
