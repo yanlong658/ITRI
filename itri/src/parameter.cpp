@@ -1,4 +1,4 @@
-#include "robot_vision/parameter.h"
+#include "itri/parameter.h"
 
 std::string path1;
 std::string path2;
@@ -35,16 +35,15 @@ void readParameters(ros::NodeHandle &n)
     {
         std::cerr << "ERROR: Wrong path to settings" << std::endl;
     }
-    std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
 
     fsSettings["r_12"] >> r_12;
     fsSettings["t_12"] >> t_12;
 
-    fsSettings["path1"] >> path1;
-    fsSettings["path2"] >> path2;
+    fsSettings["imageL_path"] >> path1;
+    fsSettings["imageR_path"] >> path2;
 
-    fsSettings["path_topic1"] >> path_topic1;
-    fsSettings["path_topic2"] >> path_topic2;
+    fsSettings["image1_topic"] >> path_topic1;
+    fsSettings["image2_topic"] >> path_topic2;
 
     fsSettings.release();
 }

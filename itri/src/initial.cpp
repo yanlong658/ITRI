@@ -7,8 +7,8 @@
 #include <sensor_msgs/Image.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include "robot_vision/parameter.h"
-#include "robot_vision/process.h"
+#include "itri/process.h"
+#include "itri/parameter.h"
 
 // 相機校正
 typedef std::pair<sensor_msgs::ImageConstPtr ,sensor_msgs::ImageConstPtr> CombinedData;
@@ -16,17 +16,6 @@ typedef std::pair<sensor_msgs::ImageConstPtr ,sensor_msgs::ImageConstPtr> Combin
 std::queue<sensor_msgs::ImageConstPtr> camera1Buf;
 std::queue<sensor_msgs::ImageConstPtr> camera2Buf;
 std::queue<CombinedData> measurements;
-
-// opencv solvepnp 相機內參和distortion是使用float,其他都是double
-cv::Mat k_g = (cv::Mat_<float>(3,3) << 829.7418430781596, 0, 328.7201641340541, 0, 830.4519219378317, 238.1345206129469, 0, 0, 1);
-cv::Mat k_b = (cv::Mat_<float>(3,3) << 866.3564402390112, 0, 326.529608545326, 0, 862.6555640703662, 263.4258095061218, 0, 0, 1);
-
-cv::Mat dis_coff = (cv::Mat_<float>(1,5) << -0.347793, 0.107340, 0.000000, 0.000722, -0.001039);
-float k1 = -0.347793;
-float k2 =  0.107340;
-float k3 =  0.000000;
-float p1 =  0.000722;
-float p2 = -0.001039;
 
 std::mutex m_buf, com_buf;
 
@@ -119,7 +108,7 @@ void process()
   std::vector<cv::Point3f> pts_3d;
   std::vector<cv::Point2f> pts_2d;
 
-  imageprocess.Pnp(matches, pts_3d, pts_2d, keypoints_1, keypoints_2, R, t ,imageL);
+  imageprocess.Pnp(matches, points, pts_2d, keypoints_1, keypoints_2, R, t ,imageL);
 
   std::cout<<"pnp R : "<<R<<std::endl;
   std::cout<<"pnp t : "<<t<<std::endl;
@@ -154,27 +143,12 @@ void command()
   }
 }
 
-bool readParameter(ros::NodeHandle &nh)
-{
-    if(!nh.getParam("path1",path1) || !nh.getParam("path2",path2))
-    {
-        ROS_ERROR_STREAM("Failed to get param 'image_path'");
-        return false;
-    }
-
-    if(!nh.getParam("path_topic1",path_topic1) || !nh.getParam("path_topic2",path_topic2))
-    {
-        ROS_ERROR_STREAM("Failed to get param 'path_topic'");
-        return false;
-    }
-}
-
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "initial");
   ros::NodeHandle nh;
   ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-  readParameter(nh);
+  readParameters(nh);
 
   imageL = cv::imread(path1,1);
   imageR = cv::imread(path2,1);

@@ -1,4 +1,4 @@
-#include "robot_vision/process.h"
+#include "itri/process.h"
 
 imageProcess::imageProcess():cameraData1(195.0,305.0), cameraData2(376.0,308.0),count(0)
 {
@@ -117,9 +117,10 @@ void imageProcess::pose_estimation_2d2d(std::vector<cv::KeyPoint> &keypoint_1 , 
   cv::Mat essential_matrix;
   // CV_FM_RANSAC for the RANSAC algorithm. N≥8
   // CV_FM_LMEDS for the LMedS algorithm. N≥8
-  essential_matrix = cv::findEssentialMat(points1,points2, k_b,CV_FM_RANSAC);
+  essential_matrix = cv::findEssentialMat(points1,points2, k_b,CV_FM_LMEDS);
   std::cout<<"essential matrix : "<<essential_matrix<<std::endl;
 
+  // 這邊的k假設兩個frame有一樣的內參
   cv::recoverPose(essential_matrix, points1,points2,k_b,R, t);
 }
 
@@ -162,6 +163,21 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
   cameraData1er.push_back(pixel2cam(cameraData1,k_b));
   cameraData2er.push_back(pixel2cam(cameraData2,k_g));
 
+  std::cout<<"pts_1.size() : "<<pts_1.size()<<std::endl;
+  std::cout<<"cameraData1er.size() : "<<cameraData1er.size()<<std::endl;
+/*
+  for(int i = 0; i<pts_1.size(); i++)
+      {
+      std::cout<<"pts_1 : "<<pts_1[i]<<std::endl;
+      std::cout<<"pts_2 : "<<pts_2[i]<<std::endl;
+  }
+
+  for(int i = 0; i<cameraData1er.size(); i++)
+      {
+      std::cout<<"cameraData1er : "<<cameraData1er[i]<<std::endl;
+      std::cout<<"cameraData2er : "<<cameraData2er[i]<<std::endl;
+  }
+*/
   cv::Mat pts_4d, test_data;
   // 三角化完的點在word frame上
   cv::triangulatePoints(T1, T2, pts_1, pts_2, pts_4d);
@@ -192,20 +208,20 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
   count++;
 }
 
-void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f> &pts_3d, std::vector<cv::Point2f> pts_2d
-         ,std::vector<cv::KeyPoint> &keypoints_1, std::vector<cv::KeyPoint> &keypoints_2,cv::Mat &R, cv::Mat &t,cv::Mat imageL)
+// 3f應該是要world frame之下 point2f是要第二張camera的點
+void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f> &pts_3d, std::vector<cv::Point2f> &pts_2d
+         ,std::vector<cv::KeyPoint> &keypoints_1, std::vector<cv::KeyPoint> &keypoints_2, cv::Mat &R, cv::Mat &t,cv::Mat imageL)
 {
+    std::vector<cv::Point3f> pts_3d_;
     std::cout<<"PNP herer"<<std::endl;
 
     for(cv::DMatch m : matches)
     {
-      ushort d = imageL.ptr<unsigned short>(int(keypoints_1[m.queryIdx].pt.y))[int(keypoints_1[m.queryIdx].pt.x)];
-      if(d ==0)
-        continue;
-      float dd = d/1000.0;
-      cv::Point2f p1 = pixel2cam(keypoints_1[m.queryIdx].pt,k_b);
-      pts_3d.push_back(cv::Point3f(p1.x*dd , p1.y*dd,dd));
       pts_2d.push_back(keypoints_2[m.trainIdx].pt);
+    }
+
+    for(int i = 0;  i< pts_3d.size(); i++) {
+        pts_3d_.push_back(cv::Point3f(pts_3d[i]));
     }
 
     std::cout<<"3d-2d pairs: "<<pts_3d.size()<<std::endl;
@@ -213,6 +229,6 @@ void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f
     cv::Mat r_;
     //use the opencv of PNP, you can choose the EPNP or DLS methods
     // cv::solvePnP(物理點座標, 特徵點圖座標, 相機內參, 相機distortion, output rotation, output translation)
-    cv::solvePnP(pts_3d,pts_2d,k_b,dis_coff,r_,t,false,cv::SOLVEPNP_EPNP);
+    cv::solvePnP(pts_3d, pts_2d, k_b, dis_coff, r_,t, false, cv::SOLVEPNP_EPNP);
     cv::Rodrigues(r_,R);
 }
