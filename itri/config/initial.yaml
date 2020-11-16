@@ -4,8 +4,8 @@
 image1_topic: "/arducam/camera/image_raw" 
 image2_topic: "/arducam/camera/image_raw"
 
-imageL_path: "/home/yanlong658/ITRI_ws/image/1.jpg"
-imageR_path: "/home/yanlong658/ITRI_ws/image/2.jpg"
+imageL_path: "/home/yanlong658/ITRI_ws/image/multipoints1.bmp"
+imageR_path: "/home/yanlong658/ITRI_ws/image/multipoints2.bmp"
 
 R_12: !!opencv-matrix
    rows: 3

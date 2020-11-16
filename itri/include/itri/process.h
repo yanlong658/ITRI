@@ -10,15 +10,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/Image.h>
 #include <cv_bridge/cv_bridge.h>
+#include "itri/parameter.h"
 
 class imageProcess
 {
   public:
     imageProcess();
+    cv::Point2f distortion_9(cv::Point2f Point);
+    cv::Point2f distortion_10(cv::Point2f Point);
 
-    cv::Point2f distortion(cv::Point2f Point);
-
-    cv::Point2f pixel2cam(const cv::Point2f &p, const cv::Mat &K);
+    cv::Point2f pixel2cam_9(const cv::Point2f &p, const cv::Mat &K);
+    cv::Point2f pixel2cam_10(const cv::Point2f &p, const cv::Mat &K);
 
     cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr img_msg , cv_bridge::CvImageConstPtr &ptr);
 
@@ -35,19 +37,24 @@ class imageProcess
              ,std::vector<cv::KeyPoint> &keypoints_1, std::vector<cv::KeyPoint> &keypoints_2,cv::Mat &R, cv::Mat &t, cv::Mat);
 
   private:
-    // opencv solvepnp 相機內參和distortion是使用float,其他都是double
-    cv::Mat k_g = (cv::Mat_<float>(3,3) << 829.741843, 0.0, 328.720164, 0.0, 830.451921, 238.134520, 0.0, 0.0, 1.0);
-    cv::Mat k_b = (cv::Mat_<float>(3,3) << 866.356440, 0.0, 326.529608, 0.0, 862.655564, 263.425809, 0.0, 0.0, 1.0);
-    cv::Mat k_t = (cv::Mat_<float>(3,3) << 866.356440, 0.0, 326.529608, 0.0, 862.655564, 263.425809, 0.0, 0.0, 1.0);
+    cv::Mat k_g = (cv::Mat_<float>(3,3) << 1199.7, 0.0, 673.2, 0.0, 1201.5, 511.1, 0.0, 0.0, 1.0);
+    cv::Mat k_b = (cv::Mat_<float>(3,3) << 1197.1, 0.0, 629.3, 0.0, 1198.1, 497.2, 0.0, 0.0, 1.0);
+    cv::Mat k_t = (cv::Mat_<float>(3,3) << 1199.7, 0.0, 673.2, 0.0, 1201.5, 511.1, 0.0, 0.0, 1.0);
 
     //distortion coefficient
-    cv::Mat dis_coff = (cv::Mat_<float>(1,5) << -0.347793, 0.107340, 0.000000, 0.000722, -0.001039);
+    cv::Mat dis_coff = (cv::Mat_<float>(1,5) << -0.138, 0.241, -0.3443, 0.0, 0.0);
 
-    float k1 = -0.347793;
-    float k2 =  0.107340;
-    float k3 =  0.000000;
-    float p1 =  0.000722;
-    float p2 = -0.001039;
+    float k1_9 = -0.138;
+    float k2_9 = 0.241;
+    float k3_9 = -0.3443;
+    float p1_9 = 0.0;
+    float p2_9 = 0.0;
+
+    float k1_10 = -0.1357;
+    float k2_10 = 0.163;
+    float k3_10 = -0.5696;
+    float p1_10 = 0.0;
+    float p2_10 = 0.0;
 
     // test data
     std::vector<cv::Point2f> cameraData1er;

@@ -6,17 +6,35 @@ imageProcess::imageProcess():cameraData1(195.0,305.0), cameraData2(376.0,308.0),
 }
 
 // input[x , y, 1]
-cv::Point2f imageProcess::distortion(cv::Point2f Point)
+cv::Point2f imageProcess::distortion_9(cv::Point2f Point)
 {
   float r = std::sqrt(Point.x * Point.x + Point.y * Point.y);
-  Point.x = Point.x * (1+ k1 * r*r + k2 * r*r*r*r) + 2 * p1 * Point.x * Point.y + p2 * (r*r + 2* Point.x * Point.x);
-  Point.y = Point.y * (1+ k1 * r*r + k2 * r*r*r*r) + p1 *(r *r + 2 * Point.y *Point.y) + 2 * p2 * Point.x * Point.y;
+  Point.x = Point.x * (1.0+ k1_9 * r*r + k2_9 * r*r*r*r) + 2.0 * p1_9 * Point.x * Point.y + p2_9 * (r*r + 2.0* Point.x * Point.x);
+  Point.y = Point.y * (1.0+ k1_9 * r*r + k2_9 * r*r*r*r) + p1_9 *(r *r + 2.0 * Point.y *Point.y) + 2.0 * p2_9 * Point.x * Point.y;
+
+  return Point;
+}
+
+cv::Point2f imageProcess::distortion_10(cv::Point2f Point)
+{
+  float r = std::sqrt(Point.x * Point.x + Point.y * Point.y);
+  Point.x = Point.x * (1.0+ k1_10 * r*r + k2_10 * r*r*r*r) + 2.0 * p1_10 * Point.x * Point.y + p2_10 * (r*r + 2.0* Point.x * Point.x);
+  Point.y = Point.y * (1.0+ k1_10 * r*r + k2_10 * r*r*r*r) + p1_10 *(r *r + 2.0 * Point.y *Point.y) + 2.0 * p2_10 * Point.x * Point.y;
 
   return Point;
 }
 
 //pixel frame translate to camera frame
-cv::Point2f imageProcess::pixel2cam(const cv::Point2f &p, const cv::Mat &K)
+cv::Point2f imageProcess::pixel2cam_9(const cv::Point2f &p, const cv::Mat &K)
+{
+  return cv::Point2f
+    (
+      (p.x - K.at<float>(0, 2)) / K.at<float>(0, 0),
+      (p.y - K.at<float>(1, 2)) / K.at<float>(1, 1)
+    );
+}
+
+cv::Point2f imageProcess::pixel2cam_10(const cv::Point2f &p, const cv::Mat &K)
 {
   return cv::Point2f
     (
@@ -155,8 +173,8 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
   for(cv::DMatch m:matches)
   {
     // 將像素座標轉換到相機座標
-    pts_1.push_back(distortion(pixel2cam(keypoint_1[m.queryIdx].pt,k_b)));
-    pts_2.push_back(distortion(pixel2cam(keypoint_2[m.queryIdx].pt,k_g)));
+    pts_1.push_back(distortion_9(pixel2cam_9(keypoint_1[m.queryIdx].pt,k_b)));
+    pts_2.push_back(distortion_10(pixel2cam_10(keypoint_2[m.queryIdx].pt,k_g)));
   }
 
   for(int i =0;i<pts_1.size();i++)
@@ -165,8 +183,8 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
   }
   cameraData1er.clear();cameraData2er.clear();
   // 測試data是cameraData1 and cameraData2
-  cameraData1er.push_back(distortion(pixel2cam(cameraData1,k_b)));
-  cameraData2er.push_back(distortion(pixel2cam(cameraData2,k_g)));
+  cameraData1er.push_back(distortion_9(pixel2cam_9(cameraData1,k_b)));
+  cameraData2er.push_back(distortion_10(pixel2cam_10(cameraData2,k_g)));
 
   // std::cout<<"pts_1.size() : "<<pts_1.size()<<std::endl;
   //std::cout<<"cameraData1er.size() : "<<cameraData1er.size()<<std::endl;
@@ -188,7 +206,7 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
     points.push_back(P);
   }
  //test data
-
+/*
   std::cout<<"test_data.cols : "<<test_data.cols<<std::endl;
   for(int i =0;i<test_data.cols;i++)
   {
@@ -199,7 +217,7 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
     std::cout<<"P test data: "<<P<<std::endl;
     points.push_back(P);
   }
-
+*/
   count++;
 }
 
@@ -207,7 +225,7 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
 void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f> &pts_3d, std::vector<cv::Point2f> &pts_2d
          ,std::vector<cv::KeyPoint> &keypoints_1, std::vector<cv::KeyPoint> &keypoints_2, cv::Mat &R, cv::Mat &t,cv::Mat imageL)
 {
-    std::cout<<"PNP herer"<<std::endl;
+    std::cout<<"PNP here"<<std::endl;
     for(cv::DMatch m:matches)
     {
         pts_2d.push_back(keypoints_2[m.trainIdx].pt);
@@ -220,6 +238,6 @@ void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f
     cv::Mat r_;
     //use the opencv of PNP, you can choose the EPNP or DLS methods
     // cv::solvePnP(物理點座標, 特徵點圖座標, 相機內參, 相機distortion, output rotation, output translation)
-    cv::solvePnP(pts_3d, pts_2d, k_t, dis_coff, r_, t, true, cv::SOLVEPNP_EPNP);
+    cv::solvePnP(pts_3d, pts_2d, k_t, dis_coff, r_, t, false, cv::SOLVEPNP_DLS);
     cv::Rodrigues(r_,R);
 }

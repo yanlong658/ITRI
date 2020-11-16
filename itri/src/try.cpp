@@ -3,35 +3,52 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
+#include <eigen3/Eigen/Dense>
+# define M_PI 3.14159265358979323846
 
 using namespace std;
 using namespace cv;
 using namespace ros;
 
-
-cv::Mat k_t = (cv::Mat_<float>(3,3) << 866.356440, 0.0, 326.529608, 0.0, 862.655564, 263.425809, 0.0, 0.0, 1.0);
-cv::Mat dis_coff = (cv::Mat_<float>(1,5) << -0.347793, 0.107340, 0.000000, 0.000722, -0.001039);
-
-void test()
+void degee2rad(Eigen::Vector3d &ea)
 {
-    Mat r_, t, R;
-    cv::Mat keypoints13D = (cv::Mat_<float>(5, 3) << 12.00604, -2.8654366, 18.472504,
-                                                        7.6863389, 4.9355154, 11.146358,
-                                                        14.260933, 2.8320458, 12.582781,
-                                                        3.4562225, 8.2668982, 11.300434,
-                                                        15.316854, 3.7486348, 12.491116);
-    cv::Mat keypoints22D = (cv::Mat_<float>(5, 2) << 918.1734, 196.77412,
-                                                       1341.7848, 946.64838,
-                                                       1309.8823, 926.85284,
-                                                       1153.3813, 782.78381,
-                                                       1399.0817, 488.19058);
+    ea[0] = ea[0] *  M_PI /180.0;
+    ea[1] = ea[1] *  M_PI /180.0;
+    ea[2] = ea[2] *  M_PI /180.0;
+}
 
-    vector<Point3f> objectPoints = { Point3f(0,0,0),Point3f(6.5,0,0),Point3f(0,0,6.5),Point3f(0,6.5,0),Point3f(4,6.5,0),Point3f(4,6.5,7),Point3f(4,0,7),Point3f(4,8,1) };
-    vector<Point2f> imagePoints = { Point2f(433,50),Point2f(512,109),Point2f(425,109),Point2f(362,106),Point2f(222,333),Point2f(480,320),Point2f(520,150),Point2f(400,170) };
-    solvePnPRansac(objectPoints, imagePoints, k_t, dis_coff, r_, t, false);
-    Rodrigues(r_,R);
-    std::cout<<"R : "<<R<<std::endl;
-    std::cout<<"t : "<<t<<std::endl;
+void rad2degree(Eigen::Vector3d &eulerAngle1)
+{
+    eulerAngle1[0] = eulerAngle1[0]*180.0/M_PI;
+    eulerAngle1[1] = eulerAngle1[1]*180.0/M_PI;
+    eulerAngle1[2] = eulerAngle1[2]*180.0/M_PI;
+}
+
+void euler2rotation()
+{
+    // roll = 2.24, pitch = 5.52, yaw = 76.73
+    Eigen::Vector3d ea(2.24 , 5.52 ,  76.73 );
+    degee2rad(ea);
+
+    Eigen::Matrix3d rotation_matrix3;
+    rotation_matrix3 = Eigen::AngleAxisd(ea[0], Eigen::Vector3d::UnitZ()) *
+                       Eigen::AngleAxisd(ea[1], Eigen::Vector3d::UnitY()) *
+                       Eigen::AngleAxisd(ea[2], Eigen::Vector3d::UnitX());
+    cout << "rotation matrix3 =\n" << rotation_matrix3 << endl;
+
+}
+
+void rotation2euler()
+{
+    Eigen::Matrix3d rotattion;
+    rotattion << -0.9209, -0.1272, -0.3683,
+                 -0.0762, 0.98576, -0.1498,
+                  0.3821, -0.1098, -0.917;
+
+    Eigen::Vector3d eulerAngle1 = rotattion.eulerAngles(2,1,0);
+    rad2degree(eulerAngle1);
+        cout << "eulerAngle1, z y x: " << eulerAngle1 << endl;
+
 }
 
 int main(int argc, char** argv)
@@ -39,7 +56,8 @@ int main(int argc, char** argv)
     init(argc, argv, "try");
     NodeHandle nh;
     console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-    test();
+    euler2rotation();
+    rotation2euler();
     spin();
     return 0;
 }
