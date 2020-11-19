@@ -44,12 +44,14 @@ class imageProcess
     //distortion coefficient
     cv::Mat dis_coff = (cv::Mat_<float>(1,5) << -0.138, 0.241, -0.3443, 0.0, 0.0);
 
+    // distortion cofficient
     float k1_9 = -0.138;
     float k2_9 = 0.241;
     float k3_9 = -0.3443;
     float p1_9 = 0.0;
     float p2_9 = 0.0;
 
+    // distortion cofficient
     float k1_10 = -0.1357;
     float k2_10 = 0.163;
     float k3_10 = -0.5696;
@@ -57,11 +59,11 @@ class imageProcess
     float p2_10 = 0.0;
 
     // test data
+
     std::vector<cv::Point2f> cameraData1er;
     std::vector<cv::Point2f> cameraData2er;
     cv::Point2f cameraData1;
     cv::Point2f cameraData2;
 
-    int count;
 };
 #endif // IMAGEPROCESS_H

@@ -1,11 +1,11 @@
 #include "itri/process.h"
 
-imageProcess::imageProcess():cameraData1(195.0,305.0), cameraData2(376.0,308.0),count(0)
+imageProcess::imageProcess():cameraData1(), cameraData2()
 {
 
 }
 
-// input[x , y, 1]
+// process the distortion
 cv::Point2f imageProcess::distortion_9(cv::Point2f Point)
 {
   float r = std::sqrt(Point.x * Point.x + Point.y * Point.y);
@@ -24,7 +24,7 @@ cv::Point2f imageProcess::distortion_10(cv::Point2f Point)
   return Point;
 }
 
-//pixel frame translate to camera frame
+//pixel frame transformate to camera frame
 cv::Point2f imageProcess::pixel2cam_9(const cv::Point2f &p, const cv::Mat &K)
 {
   return cv::Point2f
@@ -69,35 +69,38 @@ cv::Mat imageProcess::getImageFromMsg(const sensor_msgs::ImageConstPtr img_msg ,
 // find match points
 void imageProcess::find_feature_matches(cv::Mat &image1 ,cv::Mat &image2,std::vector<cv::KeyPoint> &keypoints_1 ,std::vector<cv::KeyPoint> &keypoints_2,std::vector<cv::DMatch> &good_matches)
 {
-  //SURF feature
+
   cv::Mat descriptor_1 ,descriptor_2;
 
+  //SURF feature. However the opencv3 doesn't open the surf and ros couldn't install it.
 /*
   cv::Ptr<cv::xfeatures2d::SIFT> surf = cv::xfeatures2d::SIFT::create();
   surf->detect(image1, keypoints_1);
   surf->detect(image2, keypoints_2);
 
-  //提取特征点并计算特征描述子
   surf->detectAndCompute(image1, cv::noArray(), keypoints_1, descriptor_1);
   surf->detectAndCompute(image2, cv::noArray(), keypoints_2, descriptor_2);
 */
 
-  cv::Ptr<cv::ORB> orb = cv::ORB::create();
+  // Orb feature
+  cv::Ptr<cv::ORB> orb = cv::ORB::create(100,1.2f,8);
 
-  //檢測 orb角點位置
+  // detect the feature position
   orb->detect(image1, keypoints_1);
   orb->detect(image2, keypoints_2);
 
-  //檢測 orb brief描述子
+  // detect the orb brief
   orb->compute(image1, keypoints_1, descriptor_1);
   orb->compute(image2, keypoints_2, descriptor_2);
 
-//-----
   std::vector<cv::DMatch> matches;
   // sift surf -> cv::NORM_L1
   // orb ->cv::NORM_HAMMING
 
-  cv::BFMatcher matcher(cv::NORM_HAMMING);
+  // flann match function
+  //cv::FlannBasedMatcher matcher;
+
+  cv::BFMatcher matcher(cv::NORM_L2);
   matcher.match(descriptor_1, descriptor_2, matches);
 
   double min_dist=5000.0, max_dist = 0.0;
@@ -111,7 +114,7 @@ void imageProcess::find_feature_matches(cv::Mat &image1 ,cv::Mat &image2,std::ve
 
   for(int i =0; i<descriptor_1.rows; i++)
   {
-    if(matches[i].distance <= std::max(2*min_dist,30.0))
+    if(matches[i].distance <= std::max(2*min_dist,20.0))
     {
       good_matches.push_back(matches[i]);
     }
@@ -125,21 +128,21 @@ void imageProcess::pose_estimation_2d2d(std::vector<cv::KeyPoint> &keypoint_1 , 
   std::vector<cv::Point2f> points1;
   std::vector<cv::Point2f> points2;
 
-  // 這邊點可以distortion
+  // store the feature
   for(int i =0; i<(int) matches.size();i++)
   {
     points1.push_back(keypoint_1[matches[i].queryIdx].pt);
     points2.push_back(keypoint_2[matches[i].trainIdx].pt);
   }
 
-  // 計算本質矩陣
+  // compute the essential matrix
   cv::Mat essential_matrix;
+
   // CV_FM_RANSAC for the RANSAC algorithm. N≥8
   // CV_FM_LMEDS for the LMedS algorithm. N≥8
   essential_matrix = cv::findEssentialMat(points1,points2, k_b,CV_FM_LMEDS);
-  //std::cout<<"essential matrix : "<<essential_matrix<<std::endl;
 
-  // 這邊的k假設兩個frame有一樣的內參
+  // recover the pose
   cv::recoverPose(essential_matrix, points1,points2,k_b,R, t);
 }
 
@@ -147,59 +150,52 @@ void imageProcess::pose_estimation_2d2d(std::vector<cv::KeyPoint> &keypoint_1 , 
 void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, const std::vector<cv::KeyPoint> &keypoint_2,
                    const std::vector<cv::DMatch> &matches, const cv::Mat R , const cv::Mat t, std::vector<cv::Point3f> &points)
 {
+  cv::Mat pts_4d;
   cv::Mat T1 = (cv::Mat_<float>(3,4) <<
           1.0,0.0,0.0,0.0,
           0.0,1.0,0.0,0.0,
           0.0,0.0,1.0,0.0);
 
-  cv::Mat T2;
-  if(count == 0){
-      std::cout<<"count : "<<count<<std::endl;
-      T2 = (cv::Mat_<float>(3,4) <<
-      R.at<double>(0,0),R.at<double>(0,1),R.at<double>(0,2),t.at<double>(0,0)/5.0,
-      R.at<double>(1,0),R.at<double>(1,1),R.at<double>(1,2),t.at<double>(1,0)/5.0,
-      R.at<double>(2,0),R.at<double>(2,1),R.at<double>(2,2),t.at<double>(2,0)/5.0);
-  }else {
-      std::cout<<"count : "<<count<<std::endl;
-      T2 = (cv::Mat_<float>(3,4) <<
-      R.at<double>(0,0),R.at<double>(0,1),R.at<double>(0,2),t.at<double>(0,0)/5.0,
-      R.at<double>(1,0),R.at<double>(1,1),R.at<double>(1,2),t.at<double>(1,0)/5.0,
-      R.at<double>(2,0),R.at<double>(2,1),R.at<double>(2,2),t.at<double>(2,0)/5.0);
-  }
+  cv::Mat T2 = (cv::Mat_<float>(3,4) <<
+      R.at<double>(0,0),R.at<double>(0,1),R.at<double>(0,2),t.at<double>(0),
+      R.at<double>(1,0),R.at<double>(1,1),R.at<double>(1,2),t.at<double>(1),
+      R.at<double>(2,0),R.at<double>(2,1),R.at<double>(2,2),t.at<double>(2));
 
   std::vector<cv::Point2f> pts_1,pts_2;
 
-  // 這邊可以distortion
   for(cv::DMatch m:matches)
   {
-    // 將像素座標轉換到相機座標
-    pts_1.push_back(distortion_9(pixel2cam_9(keypoint_1[m.queryIdx].pt,k_b)));
-    pts_2.push_back(distortion_10(pixel2cam_10(keypoint_2[m.queryIdx].pt,k_g)));
+    // pixel frame to camera frame
+    pts_1.push_back(pixel2cam_9(keypoint_1[m.queryIdx].pt,k_b));
+    pts_2.push_back(pixel2cam_10(keypoint_2[m.queryIdx].pt,k_g));
   }
 
   for(int i =0;i<pts_1.size();i++)
   {
       std::cout<<"pts_1[i] : "<<pts_1[i]<<std::endl;
   }
-  cameraData1er.clear();cameraData2er.clear();
-  // 測試data是cameraData1 and cameraData2
-  cameraData1er.push_back(distortion_9(pixel2cam_9(cameraData1,k_b)));
-  cameraData2er.push_back(distortion_10(pixel2cam_10(cameraData2,k_g)));
-
-  // std::cout<<"pts_1.size() : "<<pts_1.size()<<std::endl;
-  //std::cout<<"cameraData1er.size() : "<<cameraData1er.size()<<std::endl;
-
-  cv::Mat pts_4d, test_data;
-  // 三角化完的點在word frame上
+  // traningulated the points in the world frame.
   cv::triangulatePoints(T1, T2, pts_1, pts_2, pts_4d);
+
+  // test data is cameraData1 and cameraData2
+
+/*
+  cameraData1er.clear();cameraData2er.clear();
+  cameraData1er.push_back(pixel2cam_9(cameraData1,k_b));
+  cameraData2er.push_back(pixel2cam_10(cameraData2,k_g));
+
+  std::cout<<"pts_1.size() : "<<pts_1.size()<<std::endl;
+  std::cout<<"cameraData1er.size() : "<<cameraData1er.size()<<std::endl;
+
+  cv::Mat test_data;
+  // 三角化完的點在word frame上
   //std::cout<<"cameraData1er : "<<cameraData1er.size()<<std::endl;
   cv::triangulatePoints(T1, T2, cameraData1er, cameraData2er, test_data);
-
+*/
 
   for(int i =0;i<pts_4d.cols;i++)
   {
     cv::Mat x = pts_4d.col(i);
-    //std::cout<<"x : "<<x<<std::endl;
     x /= x.at<float>(3,0);
     cv::Point3d P(x.at<float>(0,0), x.at<float>(1,0),x.at<float>(2,0));
     std::cout<<"P : "<<P<<std::endl;
@@ -211,6 +207,7 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
   for(int i =0;i<test_data.cols;i++)
   {
     cv::Mat x = test_data.col(i);
+    std::cout<<"cv::Mat x : "<<x<<std::endl;
     //std::cout<<"x : "<<x<<std::endl;
     x /= x.at<float>(3,0);
     cv::Point3d P(x.at<float>(0,0), x.at<float>(1,0),x.at<float>(2,0));
@@ -218,10 +215,9 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
     points.push_back(P);
   }
 */
-  count++;
 }
 
-// 3f應該是要world frame之下 point2f是要第二張camera的點
+// type of 3f is in world frame, type of the 2f is the second points.
 void imageProcess::Pnp(std::vector<cv::DMatch> &matches, std::vector<cv::Point3f> &pts_3d, std::vector<cv::Point2f> &pts_2d
          ,std::vector<cv::KeyPoint> &keypoints_1, std::vector<cv::KeyPoint> &keypoints_2, cv::Mat &R, cv::Mat &t,cv::Mat imageL)
 {
