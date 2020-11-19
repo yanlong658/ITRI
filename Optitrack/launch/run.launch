@@ -1,0 +1,24 @@
+<launch>
+	<!--arg name="parameter_path" default = "$(find hw11)/parameter/run.yaml"/-->
+
+	<arg name="itri_node" default="false"/>
+	<group if="$(arg itri_node)">
+	<node pkg="hw11" type="itri_node" name="itri_node" output="screen"/>
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find hw11)/configuration/rviz.rviz"/>
+	</group>
+
+	<arg name="itri_correct" default="true"/>
+	<group if="$(arg itri_correct)">
+	<node pkg="hw11" type="itri_correct" name="itri_correct" output="screen"/>
+	<param name="opti_after_rotation_path" type="string" value="/home/ee405423/Desktop/ITRI/bag/long/csv_file_opti_after_rotation/data_4.csv"/>
+		<param name="corrected_path" type="string" value="/home/ee405423/Desktop/correct_4.csv"/>
+
+		<param name="opti_x" type="double" value="-0.117514"/>
+		<param name="opti_y" type="double" value="-0.16862"/>
+		<param name="opti_z" type="double" value="-0.158565"/>
+
+		<param name="laser_x" type="double" value="-121.593284"/>
+		<param name="laser_y" type="double" value="-173.650393"/>
+		<param name="laser_z" type="double" value="-149.938216"/>
+	</group>
+</launch>
