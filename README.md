@@ -1,4 +1,5 @@
-# ITRI
+# ITRI 工研院計畫
 ---
-1. set the pnp, but the value is very stable.
-2. I have correct the distortion problem.
+1. 安裝linux and ROS機器人作業系統
+2. 建立起自己的work space
+3. roslaunch itri featureMatch.launch 
