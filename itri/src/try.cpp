@@ -1,16 +1,5 @@
-#include <iostream>
-#include <ros/ros.h>
 #include <cmath>
-#include <Eigen/Dense>
-#include <eigen3/Eigen/Dense>
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/core/eigen.hpp>
-#include <opencv2/opencv.hpp>
 #include "itri/process.h"
-#include "itri/parameter.h"
 
 #define epipolar
 
@@ -52,6 +41,8 @@ CombinedData getMeasurement()
   return measurement;
 }
 #endif
+
+//計算roll pitch yaw
 void computeYPR(Eigen::Matrix3d rotation_matrix)
 {
     Eigen::Vector3d euler_angles_Epi = rotation_matrix.eulerAngles(2, 1, 0);
@@ -62,6 +53,7 @@ void computeYPR(Eigen::Matrix3d rotation_matrix)
 
 }
 
+// rotation frame1 to frame2
 cv::Mat q1to2(Eigen::Quaterniond qw_1 , Eigen::Quaterniond qw_2)
 {
     cv::Mat R;
@@ -79,6 +71,7 @@ cv::Mat q1to2(Eigen::Quaterniond qw_1 , Eigen::Quaterniond qw_2)
     return R;
 }
 
+// world frame to body frame
 Mat W2B(Mat& t,Eigen::Quaterniond q_)
 {
     Eigen::Vector3d v1_;
@@ -89,6 +82,7 @@ Mat W2B(Mat& t,Eigen::Quaterniond q_)
     std::cout<<"t: "<<t<<std::endl;
 }
 
+//image frame to camera frame
 Point2f pixel2cam ( const Point2d& p, const Mat& K )
 {
     return Point2f
@@ -98,7 +92,7 @@ Point2f pixel2cam ( const Point2d& p, const Mat& K )
     );
 }
 
-
+//三角化法,恢復深度
 void triangulation (const Mat& R, const Mat& t, vector< Point3d >& points )
 {
     Mat T1 = (Mat_<float> (3,4) <<

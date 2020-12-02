@@ -4,12 +4,12 @@
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
 #include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/Image.h>
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/features2d.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include "itri/parameter.h"
 
 class imageProcess
