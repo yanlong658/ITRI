@@ -6,7 +6,6 @@ std::string path2;
 std::string path_topic1;
 std::string path_topic2;
 
-
 cv::Mat r_12;
 cv::Mat t_12;
 

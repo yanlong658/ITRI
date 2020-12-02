@@ -9,6 +9,6 @@
 
 	<arg name="feature" default="true"/>
 	<param name="config_file" type="string" value="$(arg config_path)" />
-	<node pkg="itri" type="initial" name="initial" launch-prefix="taskset -c 3" output="screen"/>
+	<node pkg="itri" type="try" name="try" launch-prefix="taskset -c 3" output="screen"/>
 </launch>
 

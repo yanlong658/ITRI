@@ -179,20 +179,6 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
 
   // test data is cameraData1 and cameraData2
 
-/*
-  cameraData1er.clear();cameraData2er.clear();
-  cameraData1er.push_back(pixel2cam_9(cameraData1,k_b));
-  cameraData2er.push_back(pixel2cam_10(cameraData2,k_g));
-
-  std::cout<<"pts_1.size() : "<<pts_1.size()<<std::endl;
-  std::cout<<"cameraData1er.size() : "<<cameraData1er.size()<<std::endl;
-
-  cv::Mat test_data;
-  // 三角化完的點在word frame上
-  //std::cout<<"cameraData1er : "<<cameraData1er.size()<<std::endl;
-  cv::triangulatePoints(T1, T2, cameraData1er, cameraData2er, test_data);
-*/
-
   for(int i =0;i<pts_4d.cols;i++)
   {
     cv::Mat x = pts_4d.col(i);
@@ -201,20 +187,6 @@ void imageProcess::triangulation(const std::vector<cv::KeyPoint> &keypoint_1, co
     std::cout<<"P : "<<P<<std::endl;
     points.push_back(P);
   }
- //test data
-/*
-  std::cout<<"test_data.cols : "<<test_data.cols<<std::endl;
-  for(int i =0;i<test_data.cols;i++)
-  {
-    cv::Mat x = test_data.col(i);
-    std::cout<<"cv::Mat x : "<<x<<std::endl;
-    //std::cout<<"x : "<<x<<std::endl;
-    x /= x.at<float>(3,0);
-    cv::Point3d P(x.at<float>(0,0), x.at<float>(1,0),x.at<float>(2,0));
-    std::cout<<"P test data: "<<P<<std::endl;
-    points.push_back(P);
-  }
-*/
 }
 
 // type of 3f is in world frame, type of the 2f is the second points.

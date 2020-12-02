@@ -39,11 +39,9 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
-add_executable(initial 
-src/initial.cpp
+add_executable(try 
+src/try.cpp
 src/process.cpp
 src/parameter.cpp)
-target_link_libraries(initial ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
-add_executable(try src/try.cpp)
 target_link_libraries(try ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
