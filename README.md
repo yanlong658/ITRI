@@ -1,23 +1,24 @@
 # ITRI 工研院計畫
 
 ## System A
----
-事前安裝軟體
+### 事前安裝軟體
 1. opencv(3.x version)
 2. Eigen
 3. ros機器人作業系統
 
 ---
-啟動
+### 啟動
 1. 建立起自己的work space
 2. roslaunch itri featureMatch.launch 
 
-launch檔裡面跑 
+---
+### launch檔裡面跑 
 1. try.cpp
 2. parameter.cpp
 3. process.cpp
 
----要修改的參數
+---
+### 要修改的參數
 process.h 
 1. camera參數
 
@@ -27,7 +28,7 @@ try.h
 
 ## System B
 ---
-OPtitrack
+### OPtitrack
 1. roslaunch itri_node run.launch
 
 ---
