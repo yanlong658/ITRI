@@ -59,8 +59,9 @@ cv::Mat q1to2(Eigen::Quaterniond qw_1 , Eigen::Quaterniond qw_2)
     cv::Mat R;
     Eigen::Matrix3d rotation_matrix;
     Eigen::Quaterniond q1_2;
-    q1_2 = qw_2*qw_1.inverse();
+    q1_2 = qw_1.inverse()*qw_2;
 
+    //q1_2 = qw_2.inverse()*qw_1;
     rotation_matrix = q1_2.matrix();
 
     std::cout<<"rotation_matrix: "<< rotation_matrix <<std::endl;
@@ -74,8 +75,12 @@ cv::Mat q1to2(Eigen::Quaterniond qw_1 , Eigen::Quaterniond qw_2)
 // world frame to body frame
 Mat W2B(Mat& t,Eigen::Quaterniond q_)
 {
+    // translation to camera frame
+    Eigen::Vector3d tt(1221.8,750.6,-1651.5);
     Eigen::Vector3d v1_;
     cv2eigen(t,v1_);
+    //v1_ = q_*v1_+t_;
+    //v1_ = qw2c*v1_;
     v1_ = q_*v1_;
     t = (Mat_<double> (3,1) <<  v1_(0), v1_(1), v1_(2));
 
@@ -106,20 +111,20 @@ void triangulation (const Mat& R, const Mat& t, vector< Point3d >& points )
     );
 
     //1280 1024
-    Mat K1 = ( Mat_<double> ( 3,3 ) << 1450.0, 0.0, 663.4,
-                                      0.0, 1450.0, 540.0,
+    Mat K1 = ( Mat_<double> ( 3,3 ) << 1221.4,0,654.1,
+                                      0.0,1222.5,532.7,
                                       0.0, 0.0, 1.0 );
 
-    Mat K2 = ( Mat_<double> ( 3,3 ) << 1340.0,0.0, 639.1,
-                                      0.0, 1337.6, 516.2,
+    Mat K2 = ( Mat_<double> ( 3,3 ) << 1228.0,0.0,652.7,
+                                      0,1229.5,546.4,
                                       0.0, 0.0, 1.0 );
 
     vector<Point2f> pts_1, pts_2,pts_3, pts_4;
 
-    Point2d x1_1(549.0,697.0);
-    Point2d x2_1(619.0,651.0);
-    Point2d x3_1(543.0,703.0);
-    Point2d x4_1(608.0,650.0);
+    Point2d x1_1(502.0,743.0);
+    Point2d x2_1(543.0,642.0);
+    Point2d x3_1(495.0,750.0);
+    Point2d x4_1(532.0,640.0);
 
     pts_1.push_back ( pixel2cam(x1_1,K1) );
     pts_2.push_back ( pixel2cam(x2_1,K2) );
@@ -261,6 +266,7 @@ int main(int argc, char** argv)
     R = q1to2(qw_1,qw_2);
     W2B(t,qw_2);
 
+    //cv::Mat transposed = R.t();
     //-- 三角化
     vector<Point3d> points;
     triangulation( R, t, points);
